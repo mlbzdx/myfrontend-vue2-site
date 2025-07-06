@@ -1,4 +1,13 @@
-const componentArr = ["Avatar","Icon","Pager"];
+const componentArr = [
+  "Avatar",
+  "Icon",
+  "Pagination",
+  "ImageLoader",
+  "Empty",
+  "Carousel",
+  "ImageHover",
+  "CarouselItem"
+];
 let testComponents = [];
 componentArr.forEach((item) => {
   testComponents.push({

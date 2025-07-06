@@ -1,7 +1,7 @@
 <template>
     <div>
         <h1>App组件</h1>
-        <Pager :total="total" :current="current" @pageChange="handlePageChange($event)" />
+        <Pager :total="302" :current="current" @handlePaginationClick="handlePaginationClick($event)"></Pager>
     </div>
 </template>
 
@@ -18,7 +18,7 @@ export default {
         };
     },
     methods: {
-        handlePageChange(newPage) {
+        handlePaginationClick(newPage) {
             this.current = newPage;
             console.log("加载当前页数据");
         },

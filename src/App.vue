@@ -7,10 +7,13 @@
 </template>
 
 <script>
-export default {
-
-}
+export default {};
 </script>
 
-<style scoped>
+<style lang="less">
+@import "~@/styles/global.less";
+.app-container {
+  overflow: scroll;
+  height: 100vh;
+}
 </style>
