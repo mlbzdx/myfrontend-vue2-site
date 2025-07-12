@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import Carousel from "./index.vue";
+import Carousel from "./index";
 import img1 from "@/assets/carouselImg/0.webp";
 import img2 from "@/assets/carouselImg/1.webp";
 import img3 from "@/assets/carouselImg/2.webp";

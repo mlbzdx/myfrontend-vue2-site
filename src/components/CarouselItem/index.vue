@@ -1,30 +1,24 @@
 <template>
-  <div
-    class="combined-container"
-    @mouseenter="handleMouseEnter"
-    @mousemove="handleMouseMove"
-    @mouseleave="handleMouseLeave"
-  >
-    <!-- 占位图（模糊效果） -->
-    <img v-if="!everythingDone" class="placeholder" :src="placeholder" alt="" />
-
-    <!-- 主图（带悬停位移效果） -->
+  <div class="carousel-item">
     <img
-      ref="imgDom"
-      :src="src"
+      v-show="showMask"
+      :src="placeholderSrc"
       alt=""
-      @load="handleImageLoad"
-      @error="handleImageError"
-      :style="{
-        ...imgStyle,
-        opacity: originOpacity,
-        transition: `transform 0.2s ease, opacity ${duration}ms`,
-      }"
+      class="placeholderImg"
+    />
+    <img
+      @load="handleLoaded"
+      :src="originalImgSrc"
+      :alt="description.title"
+      class="originalImg"
+      :style="originalImgStyle"
     />
 
-    <!-- 图片描述文本内容 -->
-    <div class="text-container">
-      <p ref="typeText" class="typed-text">{{ displayedText }}</p>
+    <div class="text-area">
+      <h2 class="desc-title">{{ displayedTitle }}</h2>
+      <p class="desc-content">
+        {{ displayedContent }} <span v-show="isTyping">|</span>
+      </p>
     </div>
   </div>
 </template>
@@ -32,219 +26,218 @@
 <script>
 export default {
   props: {
-    src: {
+    originalImgSrc: {
       type: String,
-      required: true,
+      default:
+        "https://images.pexels.com/photos/33109/fall-autumn-red-season.jpg?fit=crop&crop=entropy&w=3456&h=2304",
     },
-    placeholder: {
+    placeholderSrc: {
       type: String,
-      required: true,
+      default:
+        "https://images.pexels.com/photos/33109/fall-autumn-red-season.jpg?w=100",
     },
     description: {
-      type: String,
-      default: "世间有十万字形，亦有十万字体",
+      type: Object,
+      default: () => ({
+        title: "就决定是你了",
+        content: "去吧，皮卡丘！使用十万伏特",
+      }),
+    },
+    isActive: {
+      type: Boolean,
+      required: true,
     },
     duration: {
       type: Number,
-      default: 500,
+      default: 2000,
     },
   },
-  data: () => ({
-    // 图片加载状态
-    originLoaded: false,
-    everythingDone: false,
+  data() {
+    return {
+      // 图片蒙版懒加载相关
+      originalImgLoaded: false,
+      showMask: !this.isActive,
+      showOriginalImg: this.isActive,
 
-    // 位移效果相关
-    imgWidth: 0,
-    imgHeight: 0,
-    containerWidth: 0,
-    containerHeight: 0,
-    moveX: 0,
-    moveY: 0,
-    isReady: false,
-    animationFrameId: null,
-    resizeObserver: null,
-
-    // 打字效果相关
-    isHovered: false,
-    displayedText: "",
-    typingInterval: null,
-    deletingInterval: null,
-    currentIndex: 0,
-    isTyping: true,
-  }),
+      // 打字动画相关
+      typingSpeed: 4,
+      displayedTitle: "",
+      displayedContent: "",
+      isTyping: true,
+      currentAction: "typing", // 'typing' 或 'deleting'
+      typingInterval: null,
+    };
+  },
   computed: {
-    // 最大可偏移量
-    maxOffset() {
+    originalImgStyle() {
       return {
-        x: Math.max(0, (this.imgWidth - this.containerWidth) / 2),
-        y: Math.max(0, (this.imgHeight - this.containerHeight) / 2),
+        opacity: this.originalImgLoaded && this.showOriginalImg ? 1 : 0,
+        transition: `${this.duration}ms ease`,
       };
     },
-    // 动态位移样式
-    imgStyle() {
-      return {
-        transform: `translate(calc(-50% + ${this.moveX}px), calc(-50% + ${this.moveY}px))`,
-      };
+    // 计算每个字符的间隔时间（毫秒）
+    charInterval() {
+      return 1000 / this.typingSpeed;
     },
-    // 主图透明度
-    originOpacity() {
-      return this.originLoaded ? 1 : 0;
+  },
+  watch: {
+    isActive(newVal) {
+      if (newVal) {
+        // 当前页变为活动页时
+        if (this.originalImgLoaded) {
+          this.showOriginalImg = true;
+          setTimeout(() => {
+            this.showMask = false;
+            this.startTyping();
+          }, this.duration);
+        }
+      } else {
+        // 当前页变为非活动页时
+        this.showOriginalImg = false;
+        this.showMask = true;
+        // 如果需要立即隐藏而不等待过渡，可以移除setTimeout
+      }
     },
   },
   methods: {
-    // 鼠标交互逻辑
-    handleMouseMove(e) {
-      if (!this.isReady) return;
-      if (!this.animationFrameId) {
-        this.animationFrameId = requestAnimationFrame(() => {
-          this.moveX =
-            -((e.offsetX / this.containerWidth) * 2 - 1) * this.maxOffset.x;
-          this.moveY =
-            -((e.offsetY / this.containerHeight) * 2 - 1) * this.maxOffset.y;
-          this.animationFrameId = null;
-        });
-      }
+    handleLoaded() {
+      this.originalImgLoaded = true;
     },
-    handleMouseLeave() {
-      this.isHovered = false;
-      this.clearEffects();
-      this.displayedText = ""; // 清空文字
-      if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-      this.$nextTick(() => {
-        this.moveX = this.moveY = 0;
-      });
+    startTyping(loop = false) {
+      this.typingSpeed = 4;
+      this.clearInterval();
+      this.currentAction = "typing";
+      this.typeText(loop);
     },
-    handleMouseEnter() {
-      this.isHovered = true;
-      this.startTypeEffect();
+    startDeleting(loop = true) {
+      this.typingSpeed = 10;
+      this.clearInterval();
+      this.currentAction = "deleting";
+      this.typeText(loop);
     },
+    typeText(loop = false) {
+      let titleIndex = 0;
+      let contentIndex = 0;
 
-    // 图片加载逻辑
-    handleImageLoad() {
-      this.initImageSize(); // 初始化尺寸
-      this.originLoaded = true;
-      setTimeout(() => {
-        this.everythingDone = true;
-        this.$emit("load");
-      }, this.duration);
-    },
-    handleImageError() {
-      console.error("图片加载失败");
-      this.$emit("error");
-    },
-
-    // 尺寸初始化
-    initImageSize() {
-      this.imgWidth = this.$refs.imgDom.clientWidth;
-      this.imgHeight = this.$refs.imgDom.clientHeight;
-      this.containerWidth = this.$el.clientWidth;
-      this.containerHeight = this.$el.clientHeight;
-      this.isReady = true;
-    },
-    //打字相关
-    startTypeEffect() {
-      this.clearEffects();
-      this.typeText();
-    },
-    // 打字
-    typeText() {
       this.typingInterval = setInterval(() => {
-        if (this.currentIndex <= this.description.length) {
-          this.displayedText = this.description.substring(0, this.currentIndex);
-          this.currentIndex++;
+        if (this.currentAction === "typing") {
+          // 正向打字逻辑（保持不变）
+          if (titleIndex < this.description.title.length) {
+            this.displayedTitle = this.description.title.substring(
+              0,
+              titleIndex + 1
+            );
+            titleIndex++;
+          } else if (contentIndex < this.description.content.length) {
+            this.displayedContent = this.description.content.substring(
+              0,
+              contentIndex + 1
+            );
+            contentIndex++;
+          } else {
+            this.isTyping = false;
+            this.clearInterval();
+            if (loop) {
+              setTimeout(() => this.startDeleting(), 1000);
+            }
+          }
         } else {
-          clearInterval(this.typingInterval);
-          setTimeout(() => {
-            this.deleteText();
-          }, 2000); // 打字完成后停留2秒
-        }
-      }, 100); // 每个字符的间隔时间(ms)
-    },
-    // 删除文本
-    deleteText() {
-      this.deletingInterval = setInterval(() => {
-        if (this.currentIndex > 0) {
-          this.currentIndex--;
-          this.displayedText = this.description.substring(0, this.currentIndex);
-        } else {
-          clearInterval(this.deletingInterval);
-          this.currentIndex = 0;
-          if (this.isHovered) {
-            // 检查是否仍在悬停状态
-            setTimeout(() => {
-              this.typeText(); // 重新开始打字
-            }, 500);
+          // 修正后的反向删除逻辑
+          if (this.displayedContent.length > 0) {
+            this.displayedContent = this.displayedContent.substring(
+              0,
+              this.displayedContent.length - 1
+            );
+          } else if (this.displayedTitle.length > 0) {
+            this.displayedTitle = this.displayedTitle.substring(
+              0,
+              this.displayedTitle.length - 1
+            );
+          } else {
+            // 完全删除后重新开始打字
+            if (loop) {
+              setTimeout(() => {
+                this.startTyping(true);
+              }, 1000);
+            } else {
+              this.clearInterval();
+            }
           }
         }
-      }, 50); // 删除速度比打字快
+      }, this.charInterval);
     },
-    clearEffects() {
-      clearInterval(this.typingInterval);
-      clearInterval(this.deletingInterval);
+    clearInterval() {
+      if (this.typingInterval) {
+        clearInterval(this.typingInterval);
+        this.typingInterval = null;
+      }
     },
+  },
+  created() {
+    this.showMask = !this.isActive;
   },
   mounted() {
-    // 响应式尺寸监听
-    this.resizeObserver = new ResizeObserver(() => {
-      if (this.originLoaded) this.initImageSize();
-    });
-    this.resizeObserver.observe(this.$el);
+    this.startTyping(true);
   },
-  beforeDestroy() {
-    this.clearEffects();
-    if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-    this.resizeObserver?.disconnect();
+  beforeUnmount() {
+    this.clearInterval();
   },
 };
 </script>
 
-<style scoped lang="less">
-.combined-container {
+<style lang="less" scoped>
+.carousel-item {
+  width: 100%;
   height: 100%;
   position: relative;
-  overflow: hidden;
-  margin: 0 auto;
-
-  img {
+  // overflow: hidden;
+  .originalImg,
+  .placeholderImg {
+    width: 110%;
+    height: 110%;
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 110%;
-    height: 120%;
-    object-fit: cover;
     transform: translate(-50%, -50%);
+    object-fit: cover;
   }
-
-  .placeholder {
+  .placeholderImg {
     filter: blur(2vw);
-    z-index: 1; /* 确保占位图在上层 */
   }
-
-  /* 主图层级控制 */
-  img:not(.placeholder) {
-    z-index: 2;
-    transition: transform 0.2s ease, opacity 500ms; /* 分离动画属性 */
-  }
-
-  .text-container {
+  .text-area {
     position: absolute;
-    top: 50%;
-    left: 50px;
-    transform: translateY(-50%);
-    padding: 10px 20px;
-    border-radius: 4px;
-    z-index: 10;
-    .type-text {
-      color: #fff;
-      font-size: 1.8rem;
-      font-weight: bold;
-      text-shadow: 0 0 8px rgba(255, 255, 255, 0.9),
-        0 0 12px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.5); /* 三层阴影增强可见性 */
-      white-space: nowrap;
-      overflow: hidden;
-      border-right: 2px solid rgba(255, 255, 255, 0.8); /* 半透明光标 */
-      letter-spacing: 1px;
+    left: 30px;
+    top: 30%;
+    letter-spacing: 3px;
+    color: #fff;
+    text-shadow: 1px 0 0 rgba(0, 0, 0, 0.5), -1px 0 0 rgba(0, 0, 0, 0.5),
+      0 1px 0 rgba(0, 0, 0, 0.5), 0 -1px 0 rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+  }
+
+  .desc-title {
+    font-size: 24px;
+    margin-bottom: 15px;
+    min-height: 28px; /* 防止文字高度变化导致布局抖动 */
+  }
+
+  .desc-content {
+    font-size: 16px;
+    line-height: 1.5;
+    min-height: 20px; /* 防止文字高度变化导致布局抖动 */
+  }
+
+  .desc-content span {
+    animation: blink 0.7s infinite;
+  }
+
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
     }
   }
 }
