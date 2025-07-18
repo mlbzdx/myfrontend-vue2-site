@@ -1,6 +1,6 @@
 <template>
   <div class="test-container">
-    <Carousel :imgsInfo="carouselItems" :interval="3000" />
+    <Carousel :imgsInfo="imgsInfoArray" :interval="3000" />
   </div>
 </template>
 
@@ -12,47 +12,48 @@ import img3 from "@/assets/carouselImg/2.webp";
 import img4 from "@/assets/carouselImg/3.webp";
 export default {
   components: { Carousel },
-  data() {
-    return {
-      carouselItems: [
-        {
-          src: img1,
-          des: "男儿何不带吴钩，收取关山五十州",
-          placeholder: img1,
+  data: () => ({
+    imgsInfoArray: [
+      {
+        src: img1,
+        placeholder: img1,
+        desc: {
+          title: "北望",
+          content: "男儿何不带吴钩，收取关山五十州",
         },
-        {
-          src: img2,
-          des: "秋叶下的风景，只有可爱的她和你",
-          placeholder: img2,
+      },
+      {
+        src: img2,
+        desc: {
+          title: "一叶",
+          content: "秋叶下的风景，只有可爱的她和你",
         },
-        {
-          src: img3,
-          des: "世间万象，纷纷扰扰，那曙光又是谁的曙光",
-          placeholder: img3,
+
+        placeholder: img2,
+      },
+      {
+        src: img3,
+
+        desc: {
+          title: "黎明",
+          content: "世间万象，纷纷扰扰，那曙光又是谁的曙光",
         },
-        {
-          src: img4,
-          des: "平二川，定三足，恍惚草堂梦里，挥斥千古风酋；战群儒，守空城，今摆乱石八阵，笑谈将军死生。",
-          placeholder: img4,
+        placeholder: img3,
+      },
+      {
+        src: img4,
+        desc: {
+          title: "孔明",
+          content:
+            "平二川，定三足，恍惚草堂梦里，挥斥千古风酋；战群儒，守空城，今摆乱石八阵，笑谈将军死生。",
         },
-      ],
-      // 使用Picsum Photos提供的免费图片
-      // carouselItems: [
-      //   {
-      //     src: "https://picsum.photos/id/1018/1200/600", // 高清图
-      //     placeholder: "https://picsum.photos/id/1018/50/25", // 低分辨率模糊占位图
-      //   },
-      //   {
-      //     src: "https://picsum.photos/id/1015/1200/600",
-      //     placeholder: "https://picsum.photos/id/1015/50/25",
-      //   },
-      //   {
-      //     src: "https://picsum.photos/id/1019/1200/600",
-      //     placeholder: "https://picsum.photos/id/1019/50/25",
-      //   },
-      // ],
-    };
-  },
+
+        placeholder: img4,
+      },
+    ],
+    currentIndex: 0,
+    timeId: null,
+  }),
 };
 </script>
 

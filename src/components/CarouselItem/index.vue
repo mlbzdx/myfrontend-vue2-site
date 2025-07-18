@@ -47,6 +47,10 @@ export default {
       type: Boolean,
       required: true,
     },
+    isHovered: {
+      type: Boolean,
+      require: true,
+    },
     duration: {
       type: Number,
       default: 2000,
@@ -92,21 +96,35 @@ export default {
           }, this.duration);
         }
       } else {
+        this.clearInterval();
         // 当前页变为非活动页时
         this.showOriginalImg = false;
         this.showMask = true;
         // 如果需要立即隐藏而不等待过渡，可以移除setTimeout
       }
     },
+    isHovered(newVal) {
+      this.clearInterval(); // 先清除之前的定时器
+      if (newVal) {
+        this.startTyping(true); // 悬停 → 循环模式
+      } else {
+        this.startTyping(false); // 非悬停 → 单次模式
+      }
+    },
   },
   methods: {
+    resetTyping() {
+      this.clearInterval();
+      this.displayedTitle = "";
+      this.displayedContent = "";
+      this.isTyping = true;
+      this.startTyping(!this.isHovered); // 根据悬停状态决定是否循环
+    },
     handleLoaded() {
       this.originalImgLoaded = true;
     },
     startTyping(loop = false) {
-      this.typingSpeed = 4;
-      this.clearInterval();
-      this.currentAction = "typing";
+      if (!this.isActive) return; // 确保只有当前页触发
       this.typeText(loop);
     },
     startDeleting(loop = true) {
@@ -137,6 +155,14 @@ export default {
           } else {
             this.isTyping = false;
             this.clearInterval();
+            if (!loop && this.isActive && !this.isHovered) {
+              setTimeout(() => {
+                this.displayedTitle = "";
+                this.displayedContent = "";
+                this.$emit("animation-complete");
+              }, 1000); // 新增事件触发
+            }
+
             if (loop) {
               setTimeout(() => this.startDeleting(), 1000);
             }
@@ -176,11 +202,8 @@ export default {
   created() {
     this.showMask = !this.isActive;
   },
-  mounted() {
-    this.startTyping(true);
-  },
-  beforeUnmount() {
-    this.clearInterval();
+  beforeDestroy() {
+    this.clearInterval(); // 组件销毁时清理定时器
   },
 };
 </script>
@@ -212,7 +235,6 @@ export default {
     color: #fff;
     text-shadow: 1px 0 0 rgba(0, 0, 0, 0.5), -1px 0 0 rgba(0, 0, 0, 0.5),
       0 1px 0 rgba(0, 0, 0, 0.5), 0 -1px 0 rgba(0, 0, 0, 0.5);
-    white-space: nowrap;
   }
 
   .desc-title {

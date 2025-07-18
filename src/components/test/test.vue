@@ -1,36 +1,21 @@
 <template>
   <div class="test-container">
-    <CarselItem
-      v-for="(item, index) in imgsInfoArray"
-      :key="index"
-      :originalImgSrc="item.src"
-      :placeholderSrc="item.placeholder"
-      :description="item.desc"
-      :is-active="currentIndex === index"
-      class="carousel-item"
-      :index="index"
-    ></CarselItem>
-    <button
-      @click="handleClick"
-      style="position: absolute; bottom: 20px; left: 50%"
-    >
-      点击
-    </button>
+    <Carousel :imgsInfo="imgsInfo"></Carousel>
   </div>
 </template>
 
 <script>
-import CarselItem from "./index.vue";
+import Carousel from "./index.vue";
 import img1 from "@/assets/carouselImg/0.webp";
 import img2 from "@/assets/carouselImg/1.webp";
 import img3 from "@/assets/carouselImg/2.webp";
 import img4 from "@/assets/carouselImg/3.webp";
 export default {
   components: {
-    CarselItem,
+    Carousel,
   },
   data: () => ({
-    imgsInfoArray: [
+    imgsInfo: [
       {
         src: img1,
         placeholder: img1,
@@ -68,19 +53,7 @@ export default {
         placeholder: img4,
       },
     ],
-    currentIndex: 0,
-    timeId: null,
   }),
-  
-  methods: {
-    start() {
-      this.currentIndex++;
-      this.currentIndex = this.currentIndex % this.imgsInfoArray.length;
-    },
-    handleClick() {
-      this.start();
-    },
-  },
 };
 </script>
 
@@ -89,9 +62,6 @@ export default {
   width: 50vw;
   height: 50vh;
   margin: 50px auto;
-  display: flex;
-  & ::v-deep .carousel-item {
-    flex: 0 0 100%;
-  }
+  position: relative;  
 }
 </style>

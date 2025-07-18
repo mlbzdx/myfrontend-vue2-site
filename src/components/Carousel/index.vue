@@ -1,33 +1,32 @@
 <template>
   <div
     class="carousel-container"
-    @mouseenter="stopAutoPlay"
-    @mouseleave="startAutoPlay"
+    @mouseenter="isHovered = true"
+    @mouseleave="
+      isHovered = false;
+      tryAdvanceSlide();
+    "
   >
     <!-- 轮播图主体 -->
     <div class="carousel-track" :style="trackStyle">
-      <!-- <div
-        class="carousel-items"
-        v-for="(item, index) in cloneImgsArray"
-        :key="index"
-      >
-        <img :src="item.src" alt="" />
-      </div> -->
-
       <CarouselItem
         v-for="(item, index) in cloneImgsArray"
-        class="carousel-item"
         :key="index"
-        :src="item.src"
-        :placeholder="item.placeholder"
-        :description="item.des"
+        :originalImgSrc="item.src"
+        :placeholderSrc="item.placeholder"
+        :description="item.desc"
+        :is-active="currentIndex === index"
+        :is-hovered="isHovered"
+        class="carousel-item"
+        :index="index"
+        @animation-complete="handleAnimationComplete"
       ></CarouselItem>
     </div>
     <!-- 轮播导航箭头 -->
-    <button class="carousel-arrow prev" @click="prev">
+    <button class="carousel-arrow prev" @click="handlePrev">
       <span>&#10094;</span>
     </button>
-    <button class="carousel-arrow next" @click="next">
+    <button class="carousel-arrow next" @click="handleNext">
       <span>&#10095;</span>
     </button>
     <!-- 轮播导航控点 -->
@@ -59,6 +58,8 @@ export default {
     },
   },
   data: () => ({
+    isHovered: false,
+    isCarouselItemAnimationComplete: false,
     containerWidth: 0,
     currentIndex: 1,
     timer: null,
@@ -93,11 +94,29 @@ export default {
     getContainerWidth() {
       this.containerWidth = this.$el.clientWidth;
     },
-    startAutoPlay() {
-      this.timer = setInterval(this.next, this.interval);
+    handleAnimationComplete() {
+      this.isCarouselItemAnimationComplete = true;
+      this.tryAdvanceSlide();
     },
-    stopAutoPlay() {
-      clearInterval(this.timer);
+    tryAdvanceSlide() {
+      if (!this.isHovered && this.isCarouselItemAnimationComplete) {
+        // 执行轮播逻辑
+        this.next();
+        this.isCarouselItemAnimationComplete = false; // 重置状态
+      }
+    },
+    handlePrev() {
+      this.prev();
+      this.resetChildAnimation(); // 新增
+    },
+    handleNext() {
+      this.next();
+      this.resetChildAnimation(); // 新增
+    },
+    resetChildAnimation() {
+      if (this.$refs.carouselItem) {
+        this.$refs.carouselItem.resetTyping();
+      }
     },
     next() {
       this.transitionEnabled = true;
@@ -134,11 +153,9 @@ export default {
   },
   mounted() {
     this.getContainerWidth();
-    this.startAutoPlay();
     window.addEventListener("resize", this.getContainerWidth);
   },
   destroyed() {
-    this.stopAutoPlay();
     window.removeEventListener("resize", this.getContainerWidth);
   },
 };
@@ -232,6 +249,8 @@ export default {
       border-radius: 50%;
       background-color: transparent;
       border: 1px #fff solid;
+      box-shadow: 1px 0 0 rgba(0, 0, 0, 0.5), -1px 0 0 rgba(0, 0, 0, 0.5),
+        0 1px 0 rgba(0, 0, 0, 0.5), 0 -1px 0 rgba(0, 0, 0, 0.5);
       &.active {
         background: #fff;
       }

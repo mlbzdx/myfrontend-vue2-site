@@ -6,7 +6,8 @@ const componentArr = [
   "Empty",
   "Carousel",
   "ImageHover",
-  "CarouselItem"
+  "CarouselItem",
+  "test"
 ];
 let testComponents = [];
 componentArr.forEach((item) => {
